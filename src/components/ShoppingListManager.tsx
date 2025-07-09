@@ -4,6 +4,9 @@ import { CheckIcon as CheckIconSolid } from '@heroicons/react/24/solid';
 import { startOfWeek, endOfWeek } from 'date-fns';
 import type { ShoppingListItem } from '../types';
 import { useShoppingList } from '../hooks/useDatabase';
+import { useTheme } from '../contexts/ThemeContext';
+import PriceComparisonWidget from './PriceComparisonWidget';
+import PriceComparison from './PriceComparison';
 
 const categories = [
   'Carnes e Aves',
@@ -26,8 +29,11 @@ interface NewItemData {
 
 export default function ShoppingListManager() {
   const { shoppingList, loading, error, addItem, updateItem, deleteItem, generateShoppingList } = useShoppingList();
+  const { effectiveTheme } = useTheme();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [showPriceComparison, setShowPriceComparison] = useState(false);
+  const [selectedIngredient, setSelectedIngredient] = useState<string>('');
   const [newItem, setNewItem] = useState<NewItemData>({
     name: '',
     quantity: 1,
@@ -54,6 +60,22 @@ export default function ShoppingListManager() {
     
     return { total, purchased, remaining, progress };
   }, [shoppingList]);
+
+  const unpurchasedIngredients = useMemo(() => {
+    return shoppingList
+      .filter(item => !item.isPurchased)
+      .map(item => item.name);
+  }, [shoppingList]);
+
+  const handleOpenPriceComparison = (ingredient: string = '') => {
+    setSelectedIngredient(ingredient);
+    setShowPriceComparison(true);
+  };
+
+  const handleClosePriceComparison = () => {
+    setShowPriceComparison(false);
+    setSelectedIngredient('');
+  };
 
   const handleAddItem = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -145,8 +167,8 @@ export default function ShoppingListManager() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Lista de Compras</h1>
-          <p className="text-gray-600">Gerencie sua lista de compras</p>
+          <h1 className={`text-2xl font-bold ${effectiveTheme === 'dark' ? 'text-white' : 'text-gray-900'}`}>Lista de Compras</h1>
+          <p className={`${effectiveTheme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>Gerencie sua lista de compras</p>
         </div>
         <div className="flex space-x-3">
           <button
@@ -169,20 +191,20 @@ export default function ShoppingListManager() {
 
       {/* Progress */}
       {shoppingList.length > 0 && (
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <div className={`${effectiveTheme === 'dark' ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow-sm border ${effectiveTheme === 'dark' ? 'border-gray-700' : 'border-gray-200'} p-6`}>
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-gray-900">Progresso das Compras</h2>
-            <div className="text-sm text-gray-600">
+            <h2 className={`text-lg font-semibold ${effectiveTheme === 'dark' ? 'text-white' : 'text-gray-900'}`}>Progresso das Compras</h2>
+            <div className={`text-sm ${effectiveTheme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
               {stats.purchased} de {stats.total} itens
             </div>
           </div>
-          <div className="w-full bg-gray-200 rounded-full h-2 mb-4">
+          <div className={`w-full ${effectiveTheme === 'dark' ? 'bg-gray-700' : 'bg-gray-200'} rounded-full h-2 mb-4`}>
             <div
               className="bg-green-600 h-2 rounded-full transition-all duration-300"
               style={{ width: `${stats.progress}%` }}
             />
           </div>
-          <div className="flex justify-between text-sm text-gray-600">
+          <div className={`flex justify-between text-sm ${effectiveTheme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
             <span>{stats.remaining} itens restantes</span>
             <span>{Math.round(stats.progress)}% completo</span>
           </div>
@@ -199,14 +221,22 @@ export default function ShoppingListManager() {
         </div>
       )}
 
+      {/* Price Comparison Widget */}
+      {unpurchasedIngredients.length > 0 && (
+        <PriceComparisonWidget
+          ingredients={unpurchasedIngredients}
+          onOpenFullComparison={handleOpenPriceComparison}
+        />
+      )}
+
       {/* Shopping List */}
       {shoppingList.length === 0 ? (
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center">
-          <div className="text-gray-400 mb-4">
+        <div className={`${effectiveTheme === 'dark' ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow-sm border ${effectiveTheme === 'dark' ? 'border-gray-700' : 'border-gray-200'} p-12 text-center`}>
+          <div className={`${effectiveTheme === 'dark' ? 'text-gray-500' : 'text-gray-400'} mb-4`}>
             <SparklesIcon className="h-12 w-12 mx-auto" />
           </div>
-          <h3 className="text-lg font-medium text-gray-900 mb-2">Lista vazia</h3>
-          <p className="text-gray-600 mb-6">
+          <h3 className={`text-lg font-medium ${effectiveTheme === 'dark' ? 'text-white' : 'text-gray-900'} mb-2`}>Lista vazia</h3>
+          <p className={`${effectiveTheme === 'dark' ? 'text-gray-400' : 'text-gray-600'} mb-6`}>
             Adicione itens manualmente ou gere uma lista baseada no seu planejamento de cardápio.
           </p>
           <div className="space-x-3">
@@ -230,10 +260,10 @@ export default function ShoppingListManager() {
       ) : (
         <div className="space-y-6">
           {Object.entries(groupedItems).map(([category, items]) => (
-            <div key={category} className="bg-white rounded-lg shadow-sm border border-gray-200">
-              <div className="px-6 py-4 border-b border-gray-200">
-                <h3 className="text-lg font-medium text-gray-900">{category}</h3>
-                <p className="text-sm text-gray-600">
+            <div key={category} className={`${effectiveTheme === 'dark' ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow-sm border ${effectiveTheme === 'dark' ? 'border-gray-700' : 'border-gray-200'}`}>
+              <div className={`px-6 py-4 border-b ${effectiveTheme === 'dark' ? 'border-gray-700' : 'border-gray-200'}`}>
+                <h3 className={`text-lg font-medium ${effectiveTheme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{category}</h3>
+                <p className={`text-sm ${effectiveTheme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
                   {items.filter(item => !item.isPurchased).length} de {items.length} itens
                 </p>
               </div>
@@ -244,8 +274,8 @@ export default function ShoppingListManager() {
                       key={item.id}
                       className={`flex items-center gap-4 p-3 rounded-lg border transition-colors ${
                         item.isPurchased
-                          ? 'bg-gray-50 border-gray-200'
-                          : 'bg-white border-gray-200 hover:border-gray-300'
+                          ? `${effectiveTheme === 'dark' ? 'bg-gray-700 border-gray-600' : 'bg-gray-50 border-gray-200'}`
+                          : `${effectiveTheme === 'dark' ? 'bg-gray-800 border-gray-700 hover:border-gray-600' : 'bg-white border-gray-200 hover:border-gray-300'}`
                       }`}
                     >
                       <button
@@ -261,11 +291,11 @@ export default function ShoppingListManager() {
                       
                       <div className="flex-1">
                         <div className={`font-medium ${
-                          item.isPurchased ? 'text-gray-500 line-through' : 'text-gray-900'
+                          item.isPurchased ? `${effectiveTheme === 'dark' ? 'text-gray-500' : 'text-gray-500'} line-through` : `${effectiveTheme === 'dark' ? 'text-white' : 'text-gray-900'}`
                         }`}>
                           {item.name}
                         </div>
-                        <div className="text-sm text-gray-600">
+                        <div className={`text-sm ${effectiveTheme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
                           {item.quantity} {item.unit}
                           {item.isGenerated && (
                             <span className="ml-2 px-2 py-1 bg-purple-100 text-purple-800 text-xs rounded-full">
@@ -277,7 +307,7 @@ export default function ShoppingListManager() {
                       
                       <button
                         onClick={() => handleDeleteItem(item.id)}
-                        className="text-gray-400 hover:text-red-600 p-1"
+                        className={`${effectiveTheme === 'dark' ? 'text-gray-500 hover:text-red-400' : 'text-gray-400 hover:text-red-600'} p-1`}
                       >
                         <TrashIcon className="h-5 w-5" />
                       </button>
@@ -293,12 +323,12 @@ export default function ShoppingListManager() {
       {/* Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+          <div className={`${effectiveTheme === 'dark' ? 'bg-gray-800' : 'bg-white'} rounded-lg p-6 w-full max-w-md mx-4`}>
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-bold text-gray-900">Adicionar Item</h2>
+              <h2 className={`text-xl font-bold ${effectiveTheme === 'dark' ? 'text-white' : 'text-gray-900'}`}>Adicionar Item</h2>
               <button
                 onClick={() => setIsModalOpen(false)}
-                className="text-gray-400 hover:text-gray-600"
+                className={`${effectiveTheme === 'dark' ? 'text-gray-500 hover:text-gray-400' : 'text-gray-400 hover:text-gray-600'}`}
               >
                 <XMarkIcon className="h-6 w-6" />
               </button>
@@ -306,21 +336,21 @@ export default function ShoppingListManager() {
             
             <form onSubmit={handleAddItem} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className={`block text-sm font-medium ${effectiveTheme === 'dark' ? 'text-gray-300' : 'text-gray-700'} mb-1`}>
                   Nome do Item *
                 </label>
                 <input
                   type="text"
                   value={newItem.name}
                   onChange={(e) => setNewItem(prev => ({ ...prev, name: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className={`w-full px-3 py-2 border ${effectiveTheme === 'dark' ? 'border-gray-600 bg-gray-700 text-white' : 'border-gray-300 bg-white text-gray-900'} rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500`}
                   required
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className={`block text-sm font-medium ${effectiveTheme === 'dark' ? 'text-gray-300' : 'text-gray-700'} mb-1`}>
                     Quantidade *
                   </label>
                   <input
@@ -329,18 +359,18 @@ export default function ShoppingListManager() {
                     step="0.01"
                     value={newItem.quantity}
                     onChange={(e) => setNewItem(prev => ({ ...prev, quantity: parseFloat(e.target.value) || 1 }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className={`w-full px-3 py-2 border ${effectiveTheme === 'dark' ? 'border-gray-600 bg-gray-700 text-white' : 'border-gray-300 bg-white text-gray-900'} rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500`}
                     required
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className={`block text-sm font-medium ${effectiveTheme === 'dark' ? 'text-gray-300' : 'text-gray-700'} mb-1`}>
                     Unidade *
                   </label>
                   <select
                     value={newItem.unit}
                     onChange={(e) => setNewItem(prev => ({ ...prev, unit: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className={`w-full px-3 py-2 border ${effectiveTheme === 'dark' ? 'border-gray-600 bg-gray-700 text-white' : 'border-gray-300 bg-white text-gray-900'} rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500`}
                     required
                   >
                     <option value="kg">kg</option>
@@ -357,13 +387,13 @@ export default function ShoppingListManager() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className={`block text-sm font-medium ${effectiveTheme === 'dark' ? 'text-gray-300' : 'text-gray-700'} mb-1`}>
                   Categoria *
                 </label>
                 <select
                   value={newItem.category}
                   onChange={(e) => setNewItem(prev => ({ ...prev, category: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className={`w-full px-3 py-2 border ${effectiveTheme === 'dark' ? 'border-gray-600 bg-gray-700 text-white' : 'border-gray-300 bg-white text-gray-900'} rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500`}
                   required
                 >
                   {categories.map(category => (
@@ -376,7 +406,7 @@ export default function ShoppingListManager() {
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2 text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300"
+                  className={`px-4 py-2 ${effectiveTheme === 'dark' ? 'text-gray-300 bg-gray-600 hover:bg-gray-500' : 'text-gray-700 bg-gray-200 hover:bg-gray-300'} rounded-md`}
                 >
                   Cancelar
                 </button>
@@ -388,6 +418,18 @@ export default function ShoppingListManager() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Price Comparison Modal */}
+      {showPriceComparison && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg w-full max-w-6xl max-h-[90vh] overflow-hidden">
+            <PriceComparison
+              ingredient={selectedIngredient}
+              onClose={handleClosePriceComparison}
+            />
           </div>
         </div>
       )}
