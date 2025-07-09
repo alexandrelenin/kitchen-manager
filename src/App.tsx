@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import Layout from './components/Layout';
 import Dashboard from './components/Dashboard';
+import AdvancedDashboard from './components/AdvancedDashboard';
 import MembersManager from './components/MembersManager';
 import InventoryManager from './components/InventoryManager';
 import RecipesManager from './components/RecipesManager';
@@ -26,6 +27,8 @@ function App() {
     switch (currentPage) {
       case 'dashboard':
         return <Dashboard />;
+      case 'analytics':
+        return <AdvancedDashboard />;
       case 'members':
         return <MembersManager />;
       case 'inventory':

@@ -19,13 +19,16 @@ Kitchen Manager é um aplicativo Progressive Web App (PWA) completo para gestão
 - Sistema de busca e filtros avançados
 - Categorização automática por tipo de alimento
 
-### 📚 Sistema de Receitas
-- Base de dados pré-populada com receitas clássicas do Le Cordon Bleu
-- CRUD completo de receitas próprias
-- Sistema de avaliação com estrelas (1-5)
-- Comentários e notas dos usuários
-- Categorização por tipo de prato, refeição e dificuldade
-- Sistema de tags para organização
+### 📚 Sistema de Receitas Expandido
+- **Banco de Receitas Externas** - Integração com APIs Spoonacular e Edamam
+- **Base de dados pré-populada** com receitas clássicas do Le Cordon Bleu
+- **CRUD completo** de receitas próprias
+- **Sistema de avaliação** com estrelas (1-5)
+- **Comentários e notas** dos usuários
+- **Categorização avançada** por origem culinária (12 categorias)
+- **Filtros inteligentes** por dieta, restrições alimentares e tempo
+- **Importador de receitas** de sites populares (Tudo Gostoso, Panelinha, etc.)
+- **Sistema de tags** para organização personalizada
 
 ### 📅 Planejamento de Cardápio
 - Interface drag-and-drop intuitiva para planejar refeições
@@ -43,10 +46,12 @@ Kitchen Manager é um aplicativo Progressive Web App (PWA) completo para gestão
 - Progresso visual das compras
 
 ### 🎉 Eventos Especiais
-- Criação de eventos (churrascos, jantares, festas)
-- Configuração de número de convidados
-- Ajuste automático da lista de compras
-- Receitas específicas para ocasiões especiais
+- **Criação de eventos** (churrascos, jantares, festas)
+- **Configuração de número de convidados**
+- **Ajuste automático** da lista de compras
+- **Receitas específicas** para ocasiões especiais
+- **Sistema de gamificação** com badges e pontuação
+- **Analytics detalhados** de uso e preferências
 
 ## 🛠️ Tecnologias Utilizadas
 
@@ -66,6 +71,11 @@ Kitchen Manager é um aplicativo Progressive Web App (PWA) completo para gestão
 - **Service Worker** - Cache inteligente e funcionamento offline
 - **Web App Manifest** - Instalação como app nativo
 - **Responsive Design** - Otimizado para mobile-first
+
+### APIs Externas
+- **Spoonacular API** - Banco de receitas internacional
+- **Edamam API** - Informações nutricionais e receitas
+- **Placeholder.com** - Imagens de fallback
 
 ### Build Tools
 - **Vite** - Build tool moderna e rápida
@@ -96,6 +106,17 @@ npm run build
 # Preview da build de produção
 npm run preview
 ```
+
+### Configuração de APIs (Opcional)
+Para usar as APIs externas de receitas, configure as variáveis de ambiente:
+```bash
+# Crie um arquivo .env na raiz do projeto
+VITE_SPOONACULAR_API_KEY=sua_chave_spoonacular
+VITE_EDAMAM_APP_ID=seu_app_id_edamam
+VITE_EDAMAM_APP_KEY=sua_chave_edamam
+```
+
+**Nota**: O aplicativo funciona completamente sem as APIs configuradas, usando receitas mock para desenvolvimento.
 
 ### Configuração PWA
 O aplicativo já está configurado como PWA e pode ser instalado diretamente do navegador. As funcionalidades offline funcionam automaticamente após a primeira visita.
@@ -171,21 +192,52 @@ O aplicativo vem com receitas clássicas do Le Cordon Bleu:
 - Bundle splitting automático
 - Cache eficiente de dados
 
-## 🚀 Próximas Funcionalidades
+## 🚀 Roadmap de Desenvolvimento
 
-### Em Desenvolvimento
-- Sistema de sugestões inteligentes baseado em IA
-- Calculadora nutricional detalhada
-- Compartilhamento de receitas entre usuários
-- Integração com APIs de supermercados
-- Backup e sincronização na nuvem
+### ✅ Fase 1: Fundação - CONCLUÍDO
+- [x] Estrutura base do projeto (React 19 + TypeScript + Tailwind)
+- [x] Sistema de PWA com Service Worker
+- [x] Banco de dados IndexedDB com Dexie.js
+- [x] Gestão de membros da casa
+- [x] Sistema de estoque de ingredientes
+- [x] CRUD completo de receitas
+- [x] Planejador de cardápio com drag-and-drop
+- [x] Lista de compras inteligente
+- [x] Sistema de eventos especiais
+- [x] Receitas pré-instaladas do Le Cordon Bleu
 
-### Planejado
-- Modo escuro/claro
-- Múltiplos idiomas
-- Importação/exportação de dados
-- Notificações push
-- Integração com assistentes de voz
+### ✅ Fase 2: Expansão Culinária - CONCLUÍDO
+- [x] **Integração com APIs externas** (Spoonacular, Edamam)
+- [x] **Sistema de categorização** por origem culinária (12 categorias)
+- [x] **Filtros avançados** por dieta, restrições alimentares e tempo
+- [x] **Importador de receitas** de sites populares
+- [x] **Sistema de gamificação** com badges e pontuação
+- [x] **Analytics detalhados** de uso e preferências
+- [x] **Geração inteligente** de planos de refeição
+
+### 🔄 Fase 3: Interface Aprimorada - EM ANDAMENTO
+- [ ] **Modo escuro/claro** - Tema dinâmico
+- [ ] **Sistema de temas** personalizáveis
+- [ ] **Animações e micro-interações** suaves
+- [ ] **Acessibilidade aprimorada** (WCAG 2.1)
+- [ ] **Componentes reutilizáveis** refinados
+- [ ] **Performance otimizada** e lazy loading
+
+### 📋 Fase 4: Funcionalidades Avançadas - PLANEJADO
+- [ ] **Calculadora nutricional** detalhada
+- [ ] **Sistema de sugestões** baseado em IA
+- [ ] **Compartilhamento** de receitas entre usuários
+- [ ] **Integração com supermercados** (APIs de preços)
+- [ ] **Backup e sincronização** na nuvem
+- [ ] **Notificações push** inteligentes
+
+### 🌐 Fase 5: Expansão Global - FUTURO
+- [ ] **Múltiplos idiomas** (i18n)
+- [ ] **Importação/exportação** de dados
+- [ ] **Integração com assistentes** de voz
+- [ ] **App móvel nativo** (React Native)
+- [ ] **Marketplace** de receitas
+- [ ] **Comunidade de usuários**
 
 ## 📝 Licença
 

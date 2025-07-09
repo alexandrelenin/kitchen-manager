@@ -55,6 +55,16 @@ export interface Recipe {
   source: 'own' | 'cordon-bleu' | 'internet' | 'community';
   videoUrl?: string;
   imageUrl?: string;
+  sourceUrl?: string;
+  nutrition?: {
+    calories: number;
+    protein: number;
+    carbs: number;
+    fat: number;
+    fiber?: number;
+    sugar?: number;
+    sodium?: number;
+  };
   createdAt: Date;
   updatedAt: Date;
 }
@@ -78,6 +88,14 @@ export interface ShoppingListItem {
   category: string;
   isPurchased: boolean;
   isGenerated: boolean;
+  estimatedPrice?: number;
+  priority?: 'high' | 'medium' | 'low';
+  alternatives?: Array<{
+    name: string;
+    price: number;
+    savings: number;
+    quality: 'higher' | 'similar' | 'lower';
+  }>;
   createdAt: Date;
   updatedAt: Date;
 }

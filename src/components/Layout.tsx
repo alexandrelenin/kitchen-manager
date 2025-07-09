@@ -1,5 +1,5 @@
 import React from 'react';
-import { Bars3Icon, HomeIcon, CalendarDaysIcon, BookOpenIcon, ShoppingBagIcon, UserGroupIcon, Cog6ToothIcon } from '@heroicons/react/24/outline';
+import { Bars3Icon, HomeIcon, CalendarDaysIcon, BookOpenIcon, ShoppingBagIcon, UserGroupIcon, Cog6ToothIcon, ChartBarIcon } from '@heroicons/react/24/outline';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -9,6 +9,7 @@ interface LayoutProps {
 
 const navigation = [
   { name: 'Dashboard', href: 'dashboard', icon: HomeIcon },
+  { name: 'Analytics', href: 'analytics', icon: ChartBarIcon },
   { name: 'Cardápio', href: 'meal-plan', icon: CalendarDaysIcon },
   { name: 'Receitas', href: 'recipes', icon: BookOpenIcon },
   { name: 'Estoque', href: 'inventory', icon: ShoppingBagIcon },
