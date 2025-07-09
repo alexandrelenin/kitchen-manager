@@ -159,6 +159,15 @@ class ExternalRecipeAPIService {
   // Buscar receitas no Edamam
   async searchEdamamRecipes(filters: RecipeSearchFilters): Promise<RecipeSearchResult> {
     try {
+      // Em modo desenvolvimento ou com credenciais demo, usar mock
+      if (this.edamamAppId === 'demo-id' || this.edamamAppKey === 'demo-key') {
+        console.log('Using Edamam mock recipes (demo credentials)');
+        return this.getMockRecipes(filters);
+      }
+
+      // Mapear cuisine do português para inglês se necessário
+      const apiCuisine = filters.cuisine ? this.mapCategoryToAPIFormat(filters.cuisine) || filters.cuisine : undefined;
+
       const params = new URLSearchParams({
         app_id: this.edamamAppId,
         app_key: this.edamamAppKey,
@@ -166,7 +175,7 @@ class ExternalRecipeAPIService {
         from: (filters.offset || 0).toString(),
         to: ((filters.offset || 0) + (filters.number || 12)).toString(),
         ...(filters.query && { q: filters.query }),
-        ...(filters.cuisine && { cuisineType: filters.cuisine }),
+        ...(apiCuisine && { cuisineType: apiCuisine }),
         ...(filters.diet && { diet: filters.diet }),
         ...(filters.type && { dishType: filters.type }),
         ...(filters.maxReadyTime && { time: `1-${filters.maxReadyTime}` }),
@@ -175,10 +184,14 @@ class ExternalRecipeAPIService {
         }),
       });
 
-      const response = await fetch(`https://api.edamam.com/search?${params}`);
+      const response = await fetch(`https://api.edamam.com/search?${params}`, {
+        headers: {
+          'Accept': 'application/json',
+        },
+      });
       
       if (!response.ok) {
-        throw new Error(`Edamam API error: ${response.status}`);
+        throw new Error(`Edamam API error: ${response.status} - ${response.statusText}`);
       }
 
       const data = await response.json();
@@ -194,7 +207,7 @@ class ExternalRecipeAPIService {
         hasMore: data.more
       };
     } catch (error) {
-      console.error('Error searching Edamam recipes:', error);
+      console.warn('Edamam API unavailable, using fallback:', error);
       return this.getFallbackRecipes(filters);
     }
   }
@@ -202,17 +215,24 @@ class ExternalRecipeAPIService {
   // Buscar receitas combinando ambas as APIs
   async searchRecipes(filters: RecipeSearchFilters): Promise<RecipeSearchResult> {
     try {
-      // Tentar Spoonacular primeiro (mais completo)
+      // Tentar Spoonacular primeiro (mais completo e configurado)
       const spoonacularResult = await this.searchSpoonacularRecipes(filters);
       
       if (spoonacularResult.recipes.length > 0) {
         return spoonacularResult;
       }
 
-      // Fallback para Edamam se Spoonacular falhar
-      return await this.searchEdamamRecipes(filters);
+      // Fallback para Edamam apenas se tiver credenciais reais
+      if (this.edamamAppId !== 'demo-id' && this.edamamAppKey !== 'demo-key') {
+        console.log('Trying Edamam as fallback...');
+        return await this.searchEdamamRecipes(filters);
+      }
+
+      // Se nenhuma API está configurada, usar receitas mock
+      console.log('No external APIs configured, using mock recipes');
+      return this.getMockRecipes(filters);
     } catch (error) {
-      console.error('Error searching recipes:', error);
+      console.warn('Error searching recipes, using fallback:', error);
       return this.getFallbackRecipes(filters);
     }
   }
@@ -394,91 +414,283 @@ class ExternalRecipeAPIService {
     return categoryToAPIMap[category.toLowerCase()] || null;
   }
 
-  // Criar receita mock específica para uma cozinha
+  // Criar múltiplas receitas mock para uma cozinha
   private createMockRecipeForCuisine(cuisine: string): Recipe | null {
-    const cuisineRecipes: Record<string, Partial<Recipe>> = {
-      'italiana': {
-        name: 'Spaghetti Carbonara Clássico',
-        description: 'Autêntica receita italiana com guanciale, ovos, pecorino e pimenta preta',
-        category: 'italiana',
-        tags: ['italiana', 'massa', 'principal'],
-        ingredients: [
-          { ingredientId: crypto.randomUUID(), name: 'Spaghetti', quantity: 400, unit: 'g', optional: false },
-          { ingredientId: crypto.randomUUID(), name: 'Guanciale', quantity: 150, unit: 'g', optional: false },
-          { ingredientId: crypto.randomUUID(), name: 'Ovos', quantity: 4, unit: 'unidades', optional: false },
-          { ingredientId: crypto.randomUUID(), name: 'Pecorino Romano', quantity: 100, unit: 'g', optional: false }
-        ]
-      },
-      'chinesa': {
-        name: 'Frango Xadrez',
-        description: 'Delicioso frango refogado com vegetais e amendoim no estilo chinês',
-        category: 'chinesa',
-        tags: ['chinesa', 'frango', 'principal'],
-        ingredients: [
-          { ingredientId: crypto.randomUUID(), name: 'Peito de frango', quantity: 500, unit: 'g', optional: false },
-          { ingredientId: crypto.randomUUID(), name: 'Pimentão', quantity: 2, unit: 'unidades', optional: false },
-          { ingredientId: crypto.randomUUID(), name: 'Amendoim', quantity: 100, unit: 'g', optional: false },
-          { ingredientId: crypto.randomUUID(), name: 'Molho shoyu', quantity: 3, unit: 'colheres de sopa', optional: false }
-        ]
-      },
-      'mexicana': {
-        name: 'Tacos de Carnitas',
-        description: 'Tacos autênticos mexicanos com carne de porco desfiada e temperos especiais',
-        category: 'mexicana',
-        tags: ['mexicana', 'porco', 'principal'],
-        ingredients: [
-          { ingredientId: crypto.randomUUID(), name: 'Paleta de porco', quantity: 1, unit: 'kg', optional: false },
-          { ingredientId: crypto.randomUUID(), name: 'Tortillas de milho', quantity: 12, unit: 'unidades', optional: false },
-          { ingredientId: crypto.randomUUID(), name: 'Cebola roxa', quantity: 1, unit: 'unidade', optional: false },
-          { ingredientId: crypto.randomUUID(), name: 'Coentro', quantity: 1, unit: 'maço', optional: false }
-        ]
-      },
-      'japonesa': {
-        name: 'Ramen Tradicional',
-        description: 'Sopa japonesa com macarrão, caldo rico e diversos complementos',
-        category: 'japonesa',
-        tags: ['japonesa', 'sopa', 'principal'],
-        ingredients: [
-          { ingredientId: crypto.randomUUID(), name: 'Macarrão ramen', quantity: 200, unit: 'g', optional: false },
-          { ingredientId: crypto.randomUUID(), name: 'Caldo de osso', quantity: 500, unit: 'ml', optional: false },
-          { ingredientId: crypto.randomUUID(), name: 'Ovo cozido', quantity: 2, unit: 'unidades', optional: false },
-          { ingredientId: crypto.randomUUID(), name: 'Nori', quantity: 2, unit: 'folhas', optional: false }
-        ]
-      }
+    const cuisineRecipes: Record<string, Array<Partial<Recipe>>> = {
+      'italiana': [
+        {
+          name: 'Spaghetti Carbonara Clássico',
+          description: 'Autêntica receita italiana com guanciale, ovos, pecorino e pimenta preta',
+          tags: ['italiana', 'massa', 'principal'],
+          ingredients: [
+            { ingredientId: crypto.randomUUID(), name: 'Spaghetti', quantity: 400, unit: 'g', optional: false },
+            { ingredientId: crypto.randomUUID(), name: 'Guanciale', quantity: 150, unit: 'g', optional: false },
+            { ingredientId: crypto.randomUUID(), name: 'Ovos', quantity: 4, unit: 'unidades', optional: false },
+            { ingredientId: crypto.randomUUID(), name: 'Pecorino Romano', quantity: 100, unit: 'g', optional: false }
+          ]
+        },
+        {
+          name: 'Risotto ai Funghi',
+          description: 'Cremoso risotto italiano com cogumelos porcini',
+          tags: ['italiana', 'risotto', 'principal', 'vegetariano'],
+          ingredients: [
+            { ingredientId: crypto.randomUUID(), name: 'Arroz Arbório', quantity: 300, unit: 'g', optional: false },
+            { ingredientId: crypto.randomUUID(), name: 'Cogumelos Porcini', quantity: 200, unit: 'g', optional: false },
+            { ingredientId: crypto.randomUUID(), name: 'Caldo de legumes', quantity: 1, unit: 'litro', optional: false },
+            { ingredientId: crypto.randomUUID(), name: 'Parmesão', quantity: 100, unit: 'g', optional: false }
+          ]
+        },
+        {
+          name: 'Osso Buco alla Milanese',
+          description: 'Tradicional ensopado lombardo com jarrete de vitela',
+          tags: ['italiana', 'carne', 'principal', 'ensopado'],
+          ingredients: [
+            { ingredientId: crypto.randomUUID(), name: 'Jarrete de vitela', quantity: 1.5, unit: 'kg', optional: false },
+            { ingredientId: crypto.randomUUID(), name: 'Vinho branco', quantity: 1, unit: 'xícara', optional: false },
+            { ingredientId: crypto.randomUUID(), name: 'Tomate pelado', quantity: 400, unit: 'g', optional: false },
+            { ingredientId: crypto.randomUUID(), name: 'Gremolata', quantity: 1, unit: 'porção', optional: false }
+          ]
+        }
+      ],
+      'chinesa': [
+        {
+          name: 'Frango Xadrez',
+          description: 'Delicioso frango refogado com vegetais e amendoim no estilo chinês',
+          tags: ['chinesa', 'frango', 'principal'],
+          ingredients: [
+            { ingredientId: crypto.randomUUID(), name: 'Peito de frango', quantity: 500, unit: 'g', optional: false },
+            { ingredientId: crypto.randomUUID(), name: 'Pimentão', quantity: 2, unit: 'unidades', optional: false },
+            { ingredientId: crypto.randomUUID(), name: 'Amendoim', quantity: 100, unit: 'g', optional: false },
+            { ingredientId: crypto.randomUUID(), name: 'Molho shoyu', quantity: 3, unit: 'colheres de sopa', optional: false }
+          ]
+        },
+        {
+          name: 'Pato Laqueado de Pequim',
+          description: 'Tradicional pato chinês com pele crocante e molho hoisin',
+          tags: ['chinesa', 'pato', 'principal', 'festivo'],
+          ingredients: [
+            { ingredientId: crypto.randomUUID(), name: 'Pato inteiro', quantity: 1, unit: 'unidade', optional: false },
+            { ingredientId: crypto.randomUUID(), name: 'Molho hoisin', quantity: 4, unit: 'colheres de sopa', optional: false },
+            { ingredientId: crypto.randomUUID(), name: 'Panquecas chinesas', quantity: 12, unit: 'unidades', optional: false },
+            { ingredientId: crypto.randomUUID(), name: 'Cebolinha', quantity: 6, unit: 'talos', optional: false }
+          ]
+        },
+        {
+          name: 'Mapo Tofu Autêntico',
+          description: 'Picante tofu de Sichuan com carne moída e pimenta Sichuan',
+          tags: ['chinesa', 'tofu', 'principal', 'picante'],
+          ingredients: [
+            { ingredientId: crypto.randomUUID(), name: 'Tofu sedoso', quantity: 400, unit: 'g', optional: false },
+            { ingredientId: crypto.randomUUID(), name: 'Carne de porco moída', quantity: 200, unit: 'g', optional: false },
+            { ingredientId: crypto.randomUUID(), name: 'Pasta de feijão doubanjiang', quantity: 2, unit: 'colheres de sopa', optional: false },
+            { ingredientId: crypto.randomUUID(), name: 'Pimenta Sichuan', quantity: 1, unit: 'colher de chá', optional: false }
+          ]
+        }
+      ],
+      'mexicana': [
+        {
+          name: 'Tacos de Carnitas',
+          description: 'Tacos autênticos mexicanos com carne de porco desfiada e temperos especiais',
+          tags: ['mexicana', 'porco', 'principal'],
+          ingredients: [
+            { ingredientId: crypto.randomUUID(), name: 'Paleta de porco', quantity: 1, unit: 'kg', optional: false },
+            { ingredientId: crypto.randomUUID(), name: 'Tortillas de milho', quantity: 12, unit: 'unidades', optional: false },
+            { ingredientId: crypto.randomUUID(), name: 'Cebola roxa', quantity: 1, unit: 'unidade', optional: false },
+            { ingredientId: crypto.randomUUID(), name: 'Coentro', quantity: 1, unit: 'maço', optional: false }
+          ]
+        },
+        {
+          name: 'Mole Poblano',
+          description: 'Complexo molho mexicano com mais de 20 ingredientes servido com frango',
+          tags: ['mexicana', 'frango', 'principal', 'tradicional'],
+          ingredients: [
+            { ingredientId: crypto.randomUUID(), name: 'Chiles poblanos', quantity: 6, unit: 'unidades', optional: false },
+            { ingredientId: crypto.randomUUID(), name: 'Chocolate amargo', quantity: 50, unit: 'g', optional: false },
+            { ingredientId: crypto.randomUUID(), name: 'Frango inteiro', quantity: 1, unit: 'unidade', optional: false },
+            { ingredientId: crypto.randomUUID(), name: 'Amendoim', quantity: 100, unit: 'g', optional: false }
+          ]
+        },
+        {
+          name: 'Chiles en Nogada',
+          description: 'Pimentos poblano recheados com picadillo e molho de nozes',
+          tags: ['mexicana', 'pimento', 'principal', 'festivo'],
+          ingredients: [
+            { ingredientId: crypto.randomUUID(), name: 'Chiles poblanos', quantity: 8, unit: 'unidades', optional: false },
+            { ingredientId: crypto.randomUUID(), name: 'Carne moída', quantity: 500, unit: 'g', optional: false },
+            { ingredientId: crypto.randomUUID(), name: 'Nozes de castela', quantity: 200, unit: 'g', optional: false },
+            { ingredientId: crypto.randomUUID(), name: 'Romã', quantity: 1, unit: 'unidade', optional: false }
+          ]
+        }
+      ],
+      'japonesa': [
+        {
+          name: 'Ramen Tradicional',
+          description: 'Sopa japonesa com macarrão, caldo rico e diversos complementos',
+          tags: ['japonesa', 'sopa', 'principal'],
+          ingredients: [
+            { ingredientId: crypto.randomUUID(), name: 'Macarrão ramen', quantity: 200, unit: 'g', optional: false },
+            { ingredientId: crypto.randomUUID(), name: 'Caldo de osso', quantity: 500, unit: 'ml', optional: false },
+            { ingredientId: crypto.randomUUID(), name: 'Ovo cozido', quantity: 2, unit: 'unidades', optional: false },
+            { ingredientId: crypto.randomUUID(), name: 'Nori', quantity: 2, unit: 'folhas', optional: false }
+          ]
+        },
+        {
+          name: 'Sushi Nigiri Variado',
+          description: 'Seleção de nigiri com peixes frescos e arroz temperado',
+          tags: ['japonesa', 'peixe', 'entrada', 'cru'],
+          ingredients: [
+            { ingredientId: crypto.randomUUID(), name: 'Arroz para sushi', quantity: 300, unit: 'g', optional: false },
+            { ingredientId: crypto.randomUUID(), name: 'Salmão sashimi', quantity: 200, unit: 'g', optional: false },
+            { ingredientId: crypto.randomUUID(), name: 'Atum sashimi', quantity: 200, unit: 'g', optional: false },
+            { ingredientId: crypto.randomUUID(), name: 'Wasabi', quantity: 1, unit: 'colher de chá', optional: false }
+          ]
+        },
+        {
+          name: 'Tempura de Camarão',
+          description: 'Camarões empanados em massa leve e crocante',
+          tags: ['japonesa', 'camarão', 'entrada', 'frito'],
+          ingredients: [
+            { ingredientId: crypto.randomUUID(), name: 'Camarões grandes', quantity: 12, unit: 'unidades', optional: false },
+            { ingredientId: crypto.randomUUID(), name: 'Farinha tempura', quantity: 200, unit: 'g', optional: false },
+            { ingredientId: crypto.randomUUID(), name: 'Água gelada', quantity: 250, unit: 'ml', optional: false },
+            { ingredientId: crypto.randomUUID(), name: 'Molho tentsuyu', quantity: 100, unit: 'ml', optional: false }
+          ]
+        }
+      ],
+      'indiana': [
+        {
+          name: 'Chicken Tikka Masala',
+          description: 'Frango marinado em iogurte e especiarias, grelhado e servido em molho cremoso',
+          tags: ['indiana', 'frango', 'principal', 'curry'],
+          ingredients: [
+            { ingredientId: crypto.randomUUID(), name: 'Peito de frango', quantity: 600, unit: 'g', optional: false },
+            { ingredientId: crypto.randomUUID(), name: 'Iogurte natural', quantity: 200, unit: 'ml', optional: false },
+            { ingredientId: crypto.randomUUID(), name: 'Garam masala', quantity: 2, unit: 'colheres de chá', optional: false },
+            { ingredientId: crypto.randomUUID(), name: 'Leite de coco', quantity: 400, unit: 'ml', optional: false }
+          ]
+        },
+        {
+          name: 'Biryani de Cordeiro',
+          description: 'Arroz basmati aromático cozido com cordeiro e especiarias',
+          tags: ['indiana', 'cordeiro', 'principal', 'arroz'],
+          ingredients: [
+            { ingredientId: crypto.randomUUID(), name: 'Cordeiro em cubos', quantity: 800, unit: 'g', optional: false },
+            { ingredientId: crypto.randomUUID(), name: 'Arroz basmati', quantity: 400, unit: 'g', optional: false },
+            { ingredientId: crypto.randomUUID(), name: 'Açafrão', quantity: 1, unit: 'pitada', optional: false },
+            { ingredientId: crypto.randomUUID(), name: 'Ghee', quantity: 3, unit: 'colheres de sopa', optional: false }
+          ]
+        }
+      ],
+      'francesa': [
+        {
+          name: 'Coq au Vin',
+          description: 'Frango braseado em vinho tinto com cogumelos e bacon',
+          tags: ['francesa', 'frango', 'principal', 'vinho'],
+          ingredients: [
+            { ingredientId: crypto.randomUUID(), name: 'Frango inteiro', quantity: 1, unit: 'unidade', optional: false },
+            { ingredientId: crypto.randomUUID(), name: 'Vinho tinto', quantity: 750, unit: 'ml', optional: false },
+            { ingredientId: crypto.randomUUID(), name: 'Bacon', quantity: 200, unit: 'g', optional: false },
+            { ingredientId: crypto.randomUUID(), name: 'Cogumelos paris', quantity: 300, unit: 'g', optional: false }
+          ]
+        },
+        {
+          name: 'Bouillabaisse Marseillaise',
+          description: 'Tradicional sopa de peixe francesa com rouille e croutons',
+          tags: ['francesa', 'peixe', 'sopa', 'mediterrânea'],
+          ingredients: [
+            { ingredientId: crypto.randomUUID(), name: 'Peixes variados', quantity: 1.5, unit: 'kg', optional: false },
+            { ingredientId: crypto.randomUUID(), name: 'Açafrão', quantity: 1, unit: 'pitada', optional: false },
+            { ingredientId: crypto.randomUUID(), name: 'Azeite de oliva', quantity: 100, unit: 'ml', optional: false },
+            { ingredientId: crypto.randomUUID(), name: 'Rouille', quantity: 1, unit: 'porção', optional: false }
+          ]
+        }
+      ],
+      'tailandesa': [
+        {
+          name: 'Pad Thai Autêntico',
+          description: 'Macarrão de arroz refogado com camarão, ovo e molho tamarindo',
+          tags: ['tailandesa', 'macarrão', 'camarão', 'principal'],
+          ingredients: [
+            { ingredientId: crypto.randomUUID(), name: 'Macarrão de arroz', quantity: 300, unit: 'g', optional: false },
+            { ingredientId: crypto.randomUUID(), name: 'Camarões médios', quantity: 300, unit: 'g', optional: false },
+            { ingredientId: crypto.randomUUID(), name: 'Molho de tamarindo', quantity: 3, unit: 'colheres de sopa', optional: false },
+            { ingredientId: crypto.randomUUID(), name: 'Brotos de feijão', quantity: 150, unit: 'g', optional: false }
+          ]
+        },
+        {
+          name: 'Tom Yum Goong',
+          description: 'Sopa tailandesa picante e azeda com camarão',
+          tags: ['tailandesa', 'sopa', 'camarão', 'picante'],
+          ingredients: [
+            { ingredientId: crypto.randomUUID(), name: 'Camarões grandes', quantity: 500, unit: 'g', optional: false },
+            { ingredientId: crypto.randomUUID(), name: 'Capim-limão', quantity: 3, unit: 'talos', optional: false },
+            { ingredientId: crypto.randomUUID(), name: 'Folhas de lima kaffir', quantity: 6, unit: 'folhas', optional: false },
+            { ingredientId: crypto.randomUUID(), name: 'Pasta de curry vermelho', quantity: 2, unit: 'colheres de sopa', optional: false }
+          ]
+        }
+      ],
+      'brasileira': [
+        {
+          name: 'Feijoada Completa',
+          description: 'Tradicional feijoada brasileira com carnes defumadas e acompanhamentos',
+          tags: ['brasileira', 'feijão', 'principal', 'tradicional'],
+          ingredients: [
+            { ingredientId: crypto.randomUUID(), name: 'Feijão preto', quantity: 500, unit: 'g', optional: false },
+            { ingredientId: crypto.randomUUID(), name: 'Linguiça calabresa', quantity: 300, unit: 'g', optional: false },
+            { ingredientId: crypto.randomUUID(), name: 'Costela de porco', quantity: 500, unit: 'g', optional: false },
+            { ingredientId: crypto.randomUUID(), name: 'Paio', quantity: 200, unit: 'g', optional: false }
+          ]
+        },
+        {
+          name: 'Moqueca de Peixe Baiana',
+          description: 'Peixe cozido no leite de coco com dendê e pimentões',
+          tags: ['brasileira', 'peixe', 'principal', 'baiana'],
+          ingredients: [
+            { ingredientId: crypto.randomUUID(), name: 'Peixe badejo', quantity: 800, unit: 'g', optional: false },
+            { ingredientId: crypto.randomUUID(), name: 'Leite de coco', quantity: 400, unit: 'ml', optional: false },
+            { ingredientId: crypto.randomUUID(), name: 'Azeite de dendê', quantity: 3, unit: 'colheres de sopa', optional: false },
+            { ingredientId: crypto.randomUUID(), name: 'Pimentão amarelo', quantity: 2, unit: 'unidades', optional: false }
+          ]
+        }
+      ]
     };
 
-    const recipeTemplate = cuisineRecipes[cuisine.toLowerCase()];
-    if (!recipeTemplate) return null;
+    const recipeVariants = cuisineRecipes[cuisine.toLowerCase()];
+    if (!recipeVariants || !Array.isArray(recipeVariants)) return null;
+
+    // Selecionar receita aleatória da cozinha
+    const randomIndex = Math.floor(Math.random() * recipeVariants.length);
+    const recipeTemplate = recipeVariants[randomIndex];
 
     return {
-      id: `mock-${cuisine}-${Date.now()}`,
+      id: `mock-${cuisine}-${Date.now()}-${randomIndex}`,
       name: recipeTemplate.name!,
       description: recipeTemplate.description!,
       ingredients: recipeTemplate.ingredients!,
       instructions: [
-        'Prepare todos os ingredientes',
-        'Siga a técnica tradicional da culinária',
-        'Tempere a gosto',
-        'Sirva quente'
+        'Prepare todos os ingredientes conforme a lista',
+        'Siga as técnicas tradicionais desta culinária',
+        'Tempere com cuidado respeitando os sabores autênticos',
+        'Sirva seguindo a apresentação tradicional'
       ],
-      prepTime: 20,
-      cookTime: 30,
-      servings: 4,
-      difficulty: 'medium',
-      category: recipeTemplate.category!,
+      prepTime: Math.floor(Math.random() * 30) + 15, // 15-45 min
+      cookTime: Math.floor(Math.random() * 60) + 20, // 20-80 min
+      servings: Math.floor(Math.random() * 4) + 2,   // 2-6 pessoas
+      difficulty: ['easy', 'medium', 'hard'][Math.floor(Math.random() * 3)] as 'easy' | 'medium' | 'hard',
+      category: cuisine,
       tags: recipeTemplate.tags!,
       reviews: [],
       imageUrl: 'https://via.placeholder.com/400x300/64748b/ffffff?text=' + encodeURIComponent(recipeTemplate.name!),
       source: 'internet',
-      rating: 4.2,
+      rating: Math.round((Math.random() * 2 + 3) * 10) / 10, // 3.0-5.0
       nutrition: {
-        calories: 350,
-        protein: 25,
-        carbs: 30,
-        fat: 15,
-        fiber: 5,
-        sugar: 8,
-        sodium: 800
+        calories: Math.floor(Math.random() * 400) + 200,  // 200-600
+        protein: Math.floor(Math.random() * 30) + 10,     // 10-40g
+        carbs: Math.floor(Math.random() * 60) + 20,       // 20-80g
+        fat: Math.floor(Math.random() * 25) + 5,          // 5-30g
+        fiber: Math.floor(Math.random() * 10) + 2,        // 2-12g
+        sugar: Math.floor(Math.random() * 20) + 5,        // 5-25g
+        sodium: Math.floor(Math.random() * 800) + 200     // 200-1000mg
       },
       createdAt: new Date(),
       updatedAt: new Date()
