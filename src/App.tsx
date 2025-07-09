@@ -4,7 +4,6 @@ import Dashboard from './components/Dashboard';
 import AdvancedDashboard from './components/AdvancedDashboard';
 import MembersManager from './components/MembersManager';
 import InventoryManager from './components/InventoryManager';
-import RecipesManager from './components/RecipesManager';
 import ExpandedRecipeBank from './components/ExpandedRecipeBank';
 import MealPlanCalendar from './components/MealPlanCalendar';
 import ShoppingListManager from './components/ShoppingListManager';

@@ -52,7 +52,8 @@ export default function ExpandedRecipeBank({ onRecipeSelect, onClose }: Expanded
   };
 
   const handleSearch = async (filters: any = {}) => {
-    if (!searchQuery.trim() && !filters.cuisine && !filters.diet) return;
+    // Permitir busca se houver qualquer filtro válido
+    if (!searchQuery.trim() && !filters.cuisine && !filters.diet && !selectedCuisine) return;
 
     setIsSearching(true);
     setHasSearched(true);

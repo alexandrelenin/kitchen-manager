@@ -111,6 +111,9 @@ class ExternalRecipeAPIService {
         return this.getMockRecipes(filters);
       }
 
+      // Mapear cuisine do português para inglês se necessário
+      const apiCuisine = filters.cuisine ? this.mapCategoryToAPIFormat(filters.cuisine) || filters.cuisine : undefined;
+      
       const params = new URLSearchParams({
         apiKey: this.spoonacularApiKey,
         number: (filters.number || 12).toString(),
@@ -120,7 +123,7 @@ class ExternalRecipeAPIService {
         fillIngredients: 'true',
         addRecipeNutrition: 'true',
         ...(filters.query && { query: filters.query }),
-        ...(filters.cuisine && { cuisine: filters.cuisine }),
+        ...(apiCuisine && { cuisine: apiCuisine }),
         ...(filters.diet && { diet: filters.diet }),
         ...(filters.intolerances && { intolerances: filters.intolerances }),
         ...(filters.type && { type: filters.type }),
@@ -368,6 +371,120 @@ class ExternalRecipeAPIService {
     return cuisineMap[cuisine.toLowerCase()] || null;
   }
 
+  // Mapear categorias do nosso sistema para a API (português -> inglês)
+  private mapCategoryToAPIFormat(category: string): string | null {
+    const categoryToAPIMap: Record<string, string> = {
+      'brasileira': 'brazilian',
+      'italiana': 'italian',
+      'chinesa': 'chinese',
+      'japonesa': 'japanese',
+      'mexicana': 'mexican',
+      'indiana': 'indian',
+      'francesa': 'french',
+      'tailandesa': 'thai',
+      'grega': 'greek',
+      'espanhola': 'spanish',
+      'americana': 'american',
+      'mediterrânea': 'mediterranean',
+      'árabe': 'middle eastern',
+      'coreana': 'korean',
+      'vietnamita': 'vietnamese'
+    };
+
+    return categoryToAPIMap[category.toLowerCase()] || null;
+  }
+
+  // Criar receita mock específica para uma cozinha
+  private createMockRecipeForCuisine(cuisine: string): Recipe | null {
+    const cuisineRecipes: Record<string, Partial<Recipe>> = {
+      'italiana': {
+        name: 'Spaghetti Carbonara Clássico',
+        description: 'Autêntica receita italiana com guanciale, ovos, pecorino e pimenta preta',
+        category: 'italiana',
+        tags: ['italiana', 'massa', 'principal'],
+        ingredients: [
+          { ingredientId: crypto.randomUUID(), name: 'Spaghetti', quantity: 400, unit: 'g', optional: false },
+          { ingredientId: crypto.randomUUID(), name: 'Guanciale', quantity: 150, unit: 'g', optional: false },
+          { ingredientId: crypto.randomUUID(), name: 'Ovos', quantity: 4, unit: 'unidades', optional: false },
+          { ingredientId: crypto.randomUUID(), name: 'Pecorino Romano', quantity: 100, unit: 'g', optional: false }
+        ]
+      },
+      'chinesa': {
+        name: 'Frango Xadrez',
+        description: 'Delicioso frango refogado com vegetais e amendoim no estilo chinês',
+        category: 'chinesa',
+        tags: ['chinesa', 'frango', 'principal'],
+        ingredients: [
+          { ingredientId: crypto.randomUUID(), name: 'Peito de frango', quantity: 500, unit: 'g', optional: false },
+          { ingredientId: crypto.randomUUID(), name: 'Pimentão', quantity: 2, unit: 'unidades', optional: false },
+          { ingredientId: crypto.randomUUID(), name: 'Amendoim', quantity: 100, unit: 'g', optional: false },
+          { ingredientId: crypto.randomUUID(), name: 'Molho shoyu', quantity: 3, unit: 'colheres de sopa', optional: false }
+        ]
+      },
+      'mexicana': {
+        name: 'Tacos de Carnitas',
+        description: 'Tacos autênticos mexicanos com carne de porco desfiada e temperos especiais',
+        category: 'mexicana',
+        tags: ['mexicana', 'porco', 'principal'],
+        ingredients: [
+          { ingredientId: crypto.randomUUID(), name: 'Paleta de porco', quantity: 1, unit: 'kg', optional: false },
+          { ingredientId: crypto.randomUUID(), name: 'Tortillas de milho', quantity: 12, unit: 'unidades', optional: false },
+          { ingredientId: crypto.randomUUID(), name: 'Cebola roxa', quantity: 1, unit: 'unidade', optional: false },
+          { ingredientId: crypto.randomUUID(), name: 'Coentro', quantity: 1, unit: 'maço', optional: false }
+        ]
+      },
+      'japonesa': {
+        name: 'Ramen Tradicional',
+        description: 'Sopa japonesa com macarrão, caldo rico e diversos complementos',
+        category: 'japonesa',
+        tags: ['japonesa', 'sopa', 'principal'],
+        ingredients: [
+          { ingredientId: crypto.randomUUID(), name: 'Macarrão ramen', quantity: 200, unit: 'g', optional: false },
+          { ingredientId: crypto.randomUUID(), name: 'Caldo de osso', quantity: 500, unit: 'ml', optional: false },
+          { ingredientId: crypto.randomUUID(), name: 'Ovo cozido', quantity: 2, unit: 'unidades', optional: false },
+          { ingredientId: crypto.randomUUID(), name: 'Nori', quantity: 2, unit: 'folhas', optional: false }
+        ]
+      }
+    };
+
+    const recipeTemplate = cuisineRecipes[cuisine.toLowerCase()];
+    if (!recipeTemplate) return null;
+
+    return {
+      id: `mock-${cuisine}-${Date.now()}`,
+      name: recipeTemplate.name!,
+      description: recipeTemplate.description!,
+      ingredients: recipeTemplate.ingredients!,
+      instructions: [
+        'Prepare todos os ingredientes',
+        'Siga a técnica tradicional da culinária',
+        'Tempere a gosto',
+        'Sirva quente'
+      ],
+      prepTime: 20,
+      cookTime: 30,
+      servings: 4,
+      difficulty: 'medium',
+      category: recipeTemplate.category!,
+      tags: recipeTemplate.tags!,
+      reviews: [],
+      imageUrl: 'https://via.placeholder.com/400x300/64748b/ffffff?text=' + encodeURIComponent(recipeTemplate.name!),
+      source: 'internet',
+      rating: 4.2,
+      nutrition: {
+        calories: 350,
+        protein: 25,
+        carbs: 30,
+        fat: 15,
+        fiber: 5,
+        sugar: 8,
+        sodium: 800
+      },
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+  }
+
   private mapDishTypeToCategory(dishType: string): string | null {
     const dishTypeMap: Record<string, string> = {
       'main course': 'principal',
@@ -476,6 +593,19 @@ class ExternalRecipeAPIService {
         updatedAt: new Date()
       }
     ];
+
+    // Criar receitas específicas por cozinha se não houver mock específico
+    if (filters.cuisine && !filters.query) {
+      const cuisineRecipe = this.createMockRecipeForCuisine(filters.cuisine);
+      if (cuisineRecipe) {
+        return {
+          recipes: [cuisineRecipe],
+          totalResults: 1,
+          offset: filters.offset || 0,
+          hasMore: false
+        };
+      }
+    }
 
     // Aplicar filtros básicos se fornecidos
     let filteredRecipes = mockRecipes;
