@@ -11,7 +11,7 @@ const navigation = [
   { name: 'Dashboard', href: 'dashboard', icon: HomeIcon },
   { name: 'Analytics', href: 'analytics', icon: ChartBarIcon },
   { name: 'Cardápio', href: 'meal-plan', icon: CalendarDaysIcon },
-  { name: 'Receitas', href: 'recipes', icon: BookOpenIcon },
+  { name: 'Banco de Receitas', href: 'recipes', icon: BookOpenIcon },
   { name: 'Estoque', href: 'inventory', icon: ShoppingBagIcon },
   { name: 'Lista de Compras', href: 'shopping', icon: ShoppingBagIcon },
   { name: 'Membros', href: 'members', icon: UserGroupIcon },

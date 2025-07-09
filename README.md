@@ -107,16 +107,27 @@ npm run build
 npm run preview
 ```
 
-### Configuração de APIs (Opcional)
-Para usar as APIs externas de receitas, configure as variáveis de ambiente:
+### Configuração de APIs (Recomendado)
+Para acessar **milhares de receitas reais**, configure as APIs externas:
+
 ```bash
-# Crie um arquivo .env na raiz do projeto
+# 1. Copie o arquivo de exemplo
+cp .env.example .env
+
+# 2. Edite o arquivo .env com suas chaves reais
 VITE_SPOONACULAR_API_KEY=sua_chave_spoonacular
 VITE_EDAMAM_APP_ID=seu_app_id_edamam
 VITE_EDAMAM_APP_KEY=sua_chave_edamam
 ```
 
-**Nota**: O aplicativo funciona completamente sem as APIs configuradas, usando receitas mock para desenvolvimento.
+**📋 Instruções Completas**: Veja [SETUP-APIS.md](SETUP-APIS.md) para guia passo-a-passo
+
+**🧪 Teste suas APIs**:
+```bash
+node scripts/test-apis.js
+```
+
+**⚠️ Importante**: O aplicativo funciona completamente sem as APIs configuradas, usando receitas mock para desenvolvimento.
 
 ### Configuração PWA
 O aplicativo já está configurado como PWA e pode ser instalado diretamente do navegador. As funcionalidades offline funcionam automaticamente após a primeira visita.

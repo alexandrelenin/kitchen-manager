@@ -1,9 +1,8 @@
-const CACHE_NAME = 'kitchen-manager-v1';
+const CACHE_NAME = 'kitchen-manager-v2';
 const urlsToCache = [
   '/',
-  '/static/js/bundle.js',
-  '/static/css/main.css',
-  '/manifest.json'
+  '/manifest.json',
+  '/vite.svg'
 ];
 
 // Install event
@@ -14,11 +13,33 @@ self.addEventListener('install', event => {
         console.log('Opened cache');
         return cache.addAll(urlsToCache);
       })
+      .catch(error => {
+        console.log('Cache installation failed:', error);
+      })
   );
+  self.skipWaiting();
 });
 
 // Fetch event
 self.addEventListener('fetch', event => {
+  // Only handle GET requests
+  if (event.request.method !== 'GET') {
+    return;
+  }
+  
+  // Skip cross-origin requests, dev tools, and external APIs
+  if (!event.request.url.startsWith(self.location.origin) || 
+      event.request.url.includes('chrome-extension') ||
+      event.request.url.includes('api.spoonacular.com') ||
+      event.request.url.includes('api.edamam.com') ||
+      event.request.url.includes('/@vite/') ||
+      event.request.url.includes('/@react-refresh') ||
+      event.request.url.includes('sockjs-node') ||
+      event.request.url.includes('webpack-dev-server') ||
+      event.request.url.includes('hot-update')) {
+    return;
+  }
+
   event.respondWith(
     caches.match(event.request)
       .then(response => {
@@ -27,8 +48,12 @@ self.addEventListener('fetch', event => {
           return response;
         }
         return fetch(event.request);
-      }
-    )
+      })
+      .catch(error => {
+        console.log('Fetch failed for:', event.request.url, error);
+        // Don't return fallback for failed requests to avoid breaking the app
+        return fetch(event.request);
+      })
   );
 });
 

@@ -5,6 +5,7 @@ import AdvancedDashboard from './components/AdvancedDashboard';
 import MembersManager from './components/MembersManager';
 import InventoryManager from './components/InventoryManager';
 import RecipesManager from './components/RecipesManager';
+import ExpandedRecipeBank from './components/ExpandedRecipeBank';
 import MealPlanCalendar from './components/MealPlanCalendar';
 import ShoppingListManager from './components/ShoppingListManager';
 import { useRecipes, useMealPlans } from './hooks/useDatabase';
@@ -34,7 +35,7 @@ function App() {
       case 'inventory':
         return <InventoryManager />;
       case 'recipes':
-        return <RecipesManager />;
+        return <ExpandedRecipeBank />;
       case 'meal-plan':
         return (
           <div className="space-y-6">
