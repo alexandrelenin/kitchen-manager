@@ -16,6 +16,7 @@ import { externalRecipeAPI, type RecipeSearchFilters } from '../lib/externalReci
 import { recipeCategoryService, CUISINE_CATEGORIES } from '../lib/recipeCategories';
 import RecipeFilters from './RecipeFilters';
 import RecipeImporter from './RecipeImporter';
+import RecipeDetailModal from './RecipeDetailModal';
 import { dbService } from '../lib/database';
 import type { Recipe } from '../types';
 
@@ -36,6 +37,8 @@ export default function ExpandedRecipeBank({ onRecipeSelect, onClose }: Expanded
   const [activeTab, setActiveTab] = useState<'discover' | 'local' | 'favorites'>('discover');
   const [currentFilters, setCurrentFilters] = useState<Partial<RecipeSearchFilters>>({});
   const [hasSearched, setHasSearched] = useState(false);
+  const [viewingRecipe, setViewingRecipe] = useState<Recipe | null>(null);
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
 
   // Carregar receitas locais ao montar o componente
   useEffect(() => {
@@ -107,6 +110,29 @@ export default function ExpandedRecipeBank({ onRecipeSelect, onClose }: Expanded
       newFavorites.add(recipeId);
     }
     setFavoriteRecipes(newFavorites);
+  };
+
+  const handleRecipeSelect = (recipe: Recipe) => {
+    if (onRecipeSelect) {
+      onRecipeSelect(recipe);
+    } else {
+      // Se não há callback externo, abrir modal de visualização
+      setViewingRecipe(recipe);
+      setIsDetailModalOpen(true);
+    }
+  };
+
+  const closeDetailModal = () => {
+    setIsDetailModalOpen(false);
+    setViewingRecipe(null);
+  };
+
+  const handleEditFromDetail = async () => {
+    if (viewingRecipe) {
+      closeDetailModal();
+      // Aqui você pode implementar a edição da receita se necessário
+      // Por enquanto, só fechamos o modal
+    }
   };
 
   const getRandomRecipes = async () => {
@@ -315,7 +341,7 @@ export default function ExpandedRecipeBank({ onRecipeSelect, onClose }: Expanded
                 recipe={recipe}
                 isFavorite={favoriteRecipes.has(recipe.id)}
                 onToggleFavorite={() => toggleFavorite(recipe.id)}
-                onSelect={() => onRecipeSelect?.(recipe)}
+                onSelect={() => handleRecipeSelect(recipe)}
               />
             ))}
           </div>
@@ -350,6 +376,16 @@ export default function ExpandedRecipeBank({ onRecipeSelect, onClose }: Expanded
           </div>
         )}
       </div>
+
+      {/* Recipe Detail Modal */}
+      {viewingRecipe && (
+        <RecipeDetailModal
+          recipe={viewingRecipe}
+          isOpen={isDetailModalOpen}
+          onClose={closeDetailModal}
+          onEdit={handleEditFromDetail}
+        />
+      )}
     </div>
   );
 }

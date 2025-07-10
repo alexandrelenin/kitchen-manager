@@ -3,6 +3,7 @@ import { PlusIcon, MagnifyingGlassIcon } from '@heroicons/react/24/outline';
 import type { Recipe, RecipeIngredient } from '../types';
 import { useRecipes } from '../hooks/useDatabase';
 import RecipeCard from './RecipeCard';
+import RecipeDetailModal from './RecipeDetailModal';
 
 const categories = [
   'Entrada', 'Prato Principal', 'Sobremesa', 'Bebida', 'Lanche', 'Sopa', 'Salada', 'Molho', 'Acompanhamento'
@@ -40,7 +41,9 @@ interface RecipeFormData {
 export default function RecipesManager() {
   const { recipes, loading, error, addRecipe, updateRecipe } = useRecipes();
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [editingRecipe, setEditingRecipe] = useState<Recipe | null>(null);
+  const [viewingRecipe, setViewingRecipe] = useState<Recipe | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [selectedDifficulty, setSelectedDifficulty] = useState('all');
@@ -97,7 +100,12 @@ export default function RecipesManager() {
     setNewTag('');
   };
 
-  const openModal = (recipe?: Recipe) => {
+  const openViewModal = (recipe: Recipe) => {
+    setViewingRecipe(recipe);
+    setIsDetailModalOpen(true);
+  };
+
+  const openEditModal = (recipe?: Recipe) => {
     if (recipe) {
       setEditingRecipe(recipe);
       setFormData({
@@ -122,7 +130,19 @@ export default function RecipesManager() {
     setIsModalOpen(true);
   };
 
-  const closeModal = () => {
+  const closeDetailModal = () => {
+    setIsDetailModalOpen(false);
+    setViewingRecipe(null);
+  };
+
+  const handleEditFromDetail = () => {
+    if (viewingRecipe) {
+      closeDetailModal();
+      openEditModal(viewingRecipe);
+    }
+  };
+
+  const closeEditModal = () => {
     setIsModalOpen(false);
     setEditingRecipe(null);
     resetForm();
@@ -159,7 +179,7 @@ export default function RecipesManager() {
       } else {
         await addRecipe(recipeData);
       }
-      closeModal();
+      closeEditModal();
     } catch (error) {
       console.error('Erro ao salvar receita:', error);
     }
@@ -264,7 +284,7 @@ export default function RecipesManager() {
           <p className="text-gray-600">Gerencie suas receitas favoritas</p>
         </div>
         <button
-          onClick={() => openModal()}
+          onClick={() => openEditModal()}
           className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
           <PlusIcon className="h-5 w-5 mr-2" />
@@ -318,7 +338,7 @@ export default function RecipesManager() {
           <RecipeCard
             key={recipe.id}
             recipe={recipe}
-            onClick={() => openModal(recipe)}
+            onClick={() => openViewModal(recipe)}
           />
         ))}
       </div>
@@ -613,7 +633,7 @@ export default function RecipesManager() {
               <div className="flex justify-end space-x-3 pt-4">
                 <button
                   type="button"
-                  onClick={closeModal}
+                  onClick={closeEditModal}
                   className="px-4 py-2 text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300"
                 >
                   Cancelar
@@ -628,6 +648,16 @@ export default function RecipesManager() {
             </form>
           </div>
         </div>
+      )}
+
+      {/* Recipe Detail Modal */}
+      {viewingRecipe && (
+        <RecipeDetailModal
+          recipe={viewingRecipe}
+          isOpen={isDetailModalOpen}
+          onClose={closeDetailModal}
+          onEdit={handleEditFromDetail}
+        />
       )}
     </div>
   );
